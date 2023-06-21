@@ -9,6 +9,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.errors import MissingPermissions
 import utilities
+import ecdcpyt as ec
 import datetime
 time_regex = re.compile("(?:(\d{1,5})(h|s|m|d))+?")
 time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400}
@@ -89,10 +90,11 @@ class moderation(commands.Cog):
         """Kicks an user, Format: @user Reason for kick"""
         database = await utilities.connect_database()
         await interaction.channel.purge(limit=1)
+        reason_to_use = ec.ecypt(reason)
         try:
             log_counter()
             database.execute("INSERT OR IGNORE INTO moderationLogs (logid, guildid, moderationLogType, userid, moduserid, content, duration) VALUES(?, ?, ?, ?, ?, ?)",
-                             (new_case, interaction.guild.id, 4, member.id, interaction.user.id, reason, "0"))
+                             (new_case, interaction.guild.id, 4, member.id, interaction.user.id, reason_to_use, "0"))
             await database.commit()
             await asyncio.sleep(2)
             await database.close()
@@ -261,14 +263,15 @@ class moderation(commands.Cog):
                 async with database.execute('SELECT logid, moderationLogType, moduserid, content, duration FROM moderationLogs WHERE guildid = ? AND userid = ?', (interaction.guild.id, member.id)) as cursor:
                     async for entry in cursor:
                         logid, moderationLogTypes, moduserid, content, duration = entry
+                        content_to_use = ec.dcypt(content)
                         Moderator = await self.bot.fetch_user(int(moduserid))
                         type = log_converter(moderationLogTypes)
                         if duration == 0:
                             embed.add_field(
-                                name=f"**Case {logid}**", value=f"**User:**{member.name}#{member.discriminator}\n**Type:**{type}\n**Admin:**{Moderator.name}#{Moderator.discriminator}\n**Reason:**{content}", inline=False)
+                                name=f"**Case {logid}**", value=f"**User:**{member.name}#{member.discriminator}\n**Type:**{type}\n**Admin:**{Moderator.name}#{Moderator.discriminator}\n**Reason:**{content_to_use}", inline=False)
                         else:
                             embed.add_field(
-                                name=f"**Case {logid}**", value=f"**User:**{member.name}#{member.discriminator}\n**Type:**{type}\n**Admin:**{Moderator.name}#{Moderator.discriminator}\n**Reason:**{content}\n**Duration:**{duration}", inline=False)
+                                name=f"**Case {logid}**", value=f"**User:**{member.name}#{member.discriminator}\n**Type:**{type}\n**Admin:**{Moderator.name}#{Moderator.discriminator}\n**Reason:**{content_to_use}\n**Duration:**{duration}", inline=False)
             except Exception as e:
                 return print(e)
         await interaction.response.send_message(embed=embed)

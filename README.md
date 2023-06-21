@@ -7,4 +7,13 @@ Any PR made onto this repository should be in the best interest of the team and 
 
 - Add weak or unsecured code that would pose a security risk.
 
+## Requirements:
+- aiosqlite
+- sqlite3
+- discord.py[voice] Version 2.x.x or > 
+- pyDES
+- aiofiles
+- asyncio
+- colorama
+- Python 3.11 or > 
 
