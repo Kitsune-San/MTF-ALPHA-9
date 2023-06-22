@@ -1,5 +1,5 @@
 # Intro:
-This bot is the official bot that represents us in the social media platform known as discord.
+This console app is the official app that represents us in the social media platform known as discord and manages the bot within it.
 Authorized Personnel are allowed to suggest changes with the Pull request.
 Any PR made onto this repository should be in the best interest of the team and any users / civilians. Under no way are you allowed to:
 
