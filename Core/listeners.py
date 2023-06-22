@@ -28,7 +28,7 @@ class eventlist(commands.Cog):
         if isinstance(error, commands.MissingPermissions):
             utils.print_exception_msg(f"User missing permissions for the {ctx.command} that was issued in {ctx.guild.name}.")
             utils.write_log(f"[{current_date_pretty}]    {ctx.author} is  missing permission(s). {error}")
-            await ctx.reply(f"You are missing permissions in this server to execute this command {error}")
+            await ctx.reply(f"Your clearance is not high enough to execute this. {error}")
         else:
             utils.print_exception_msg(f"Invalid command issued. Traceback: {error}")
             utils.write_log(f"[{current_date_pretty}]    {ctx.author} issued {ctx.command} but something went wrong. {error}")
