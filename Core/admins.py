@@ -122,7 +122,7 @@ class admins(commands.Cog):
             utilities.print_exception_msg(e)
         else:
             await interaction.response.send_message(f"Reloaded `{_module}`")
-            await utilities.write_log(f"[{current_date_pretty_text}]    {interaction.user} has reloaded {_module}")
+            utilities.write_log(f"[{current_date_pretty_text}]    {interaction.user} has reloaded {_module}")
 
     @commands.command(name="dbsetup")
     @utilities.is_bot_admin()
