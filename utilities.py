@@ -7,7 +7,7 @@ from datetime import datetime
 from discord import app_commands
 logname = datetime.now()
 logname_pretty = logname.strftime("%d-%m-%Y")
-bot_version = "0.8.4"
+bot_version = "0.0.2"
 
 
 async def connect_database():

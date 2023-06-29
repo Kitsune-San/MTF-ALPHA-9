@@ -11,5 +11,5 @@ def ecpyt(message:str):
 
 def dcypt(message:str):
     """Decrypts data using `triple_des()`"""
-    ttd = triple_des(eck).decrypt(message)
+    ttd = triple_des(eck).decrypt(message, padmode=2)
     return ttd

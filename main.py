@@ -1,4 +1,12 @@
-from argparse import ArgumentParser
+
+import os
+try:
+    from argparse import ArgumentParser
+except ModuleNotFoundError:
+    print("First install detected. Installing modules...")
+    os.system("pip install argparse, typing, discord.py[voice] datetime logging PyDES colorama")
+    os.system("Done")
+
 from typing import Optional
 import discord
 from discord.ext import commands
@@ -44,6 +52,7 @@ class mtfbot(commands.Bot):
         if not args.disablelog:
             utilities.print_info_line(f"{self.user} has connected to the gateaway")
             utilities.print_info_line(linkurl)
+            utilities.print_info_line("Starting.....")
         for extension in assets.modules:
             await bot.load_extension(extension)
             if not args.disablelog:
@@ -51,8 +60,8 @@ class mtfbot(commands.Bot):
                 utilities.write_log(f"Loaded {extension}")
         await bot.change_presence(activity=discord.Game(name="Watching for new mtf cadets."))
         if not args.disablelog:
-            utilities.print_info_line(f"Loaded Everything and bot is online")
             utilities.write_log(f"{self.user} is online from {current_date_pretty}")
+            utilities.print_info_line(f"{self.user} is online. Start date: {current_date_pretty}")
 
 
 bot = mtfbot(intents=intents)

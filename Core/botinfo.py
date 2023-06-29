@@ -5,7 +5,7 @@ from discord.ext import commands
 import time
 import platform
 import utilities
-from utilities import logname_pretty
+from utilities import logname
 current_uptime = time.time()
 
 
@@ -32,7 +32,7 @@ class botinfo(commands.Cog):
         embed.add_field(name="Guilds", value=guilds, inline=False)
         embed.add_field(name="Uptime", value=uptime, inline=False)
         await interaction.response.send_message(embed=embed)
-        utilities.write_log(f"[{logname_pretty}]    {interaction.user} Requested bot information.")
+        utilities.write_log(f"[{logname}]    {interaction.user} Requested bot information.")
 
 
 async def setup(bot: commands.Bot) -> None:
