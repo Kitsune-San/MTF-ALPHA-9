@@ -116,9 +116,10 @@ class moderation(commands.Cog):
             await member.ban(reason=reason)
         except MissingPermissions:
             await interaction.response.send_message("You do not have the permission(s) to use this.")
+        encrypted_reason = crypter.ecpyt(reason)
         try:
             log_counter()
-            await database.execute("INSERT OR IGNORE INTO moderationLogs (logid, guildid, moderationLogType, userid, moduserid, content, duration) VALUES (?, ?, ?, ?, ?, ?,?)", (new_case, interaction.guild.id, 6, member.id, interaction.user.id, reason, "0"))
+            await database.execute("INSERT OR IGNORE INTO moderationLogs (logid, guildid, moderationLogType, userid, moduserid, content, duration) VALUES (?, ?, ?, ?, ?, ?,?)", (new_case, interaction.guild.id, 6, member.id, interaction.user.id, encrypted_reason, "0"))
             await database.commit()
             await asyncio.sleep(2)
             await database.close()
@@ -126,7 +127,7 @@ class moderation(commands.Cog):
         except sqlite3.Connection.Error as e:
             print(f"Connection Closed {e}\n")
             pass
-        await interaction.response.send_message(f"Logged and Banned ✅ {member}")
+        await interaction.channel.send(f"Logged and Banned ✅ {member}")
         try:
             await member.send(f"Hey {member.display_name} You got banned in **{interaction.guild.name}** for: \n**{reason}**")
         except discord.errors.Forbidden:
@@ -134,30 +135,30 @@ class moderation(commands.Cog):
 
     @app_commands.command(name='unban', description="unban an user.")
     @commands.has_permissions(ban_members=True)
-    async def unban(self, interaction: discord.Interaction, member: str, *, reason: str = None):
+    async def unban(self, interaction: discord.Interaction, member: str,reason: str = None):
         """Unbans an user from the server. Format: username#0000"""
         database = await utilities.connect_database()
-        await interaction.channel.purge(limit=1)
-        banned_users = await interaction.guild.bans()
-        member_name, member_discriminator = member.split('#')
-
-        for ban_entry in banned_users:
-            user = ban_entry.user
-            if (user.name, user.discriminator) == (member_name, member_discriminator):
-                await interaction.guild.unban(user)
-                await interaction.response.send_message(f'Unbanned {user.mention}')
-                try:
-                    log_counter()
-                    cur = database.cursor()
-                    await database.execute("INSERT OR IGNORE INTO moderationLogs (logid, guildid, moderationLogType, userid, moduserid, content, duration) VALUES (?, ?, ?, ?, ?, ?, ?)", (new_case, interaction.guild.id, 7,  member.id, interaction.user.id, reason, "0"))
-                    await database.commit()
-                    await asyncio.sleep(2)
-                    await cur.close()
-                    await database.close()
-                    utilities.write_log(f"{member_name} Unbanned by {interaction.user}")
-                except sqlite3.Connection.Error:
-                    print("Db closed")
-                    pass
+        try:
+            user = await interaction.client.fetch_user(member)
+        except Exception:
+            return await interaction.response.send_message("Sorry this is not a valid user ID")
+        try:
+            await interaction.guild.unban(user)
+        except discord.errors.NotFound as e:
+            return await interaction.response.send_message("That user is not banned", ephemeral=True)
+        await interaction.response.send_message(f'Unbanned {user.mention}')
+        try:
+            log_counter()
+            cur = await database.cursor()
+            await database.execute("INSERT OR IGNORE INTO moderationLogs (logid, guildid, moderationLogType, userid, moduserid, content, duration) VALUES (?, ?, ?, ?, ?, ?, ?)", (new_case, interaction.guild.id, 7,  user.id, interaction.user.id, reason, "0"))
+            await database.commit()
+            await asyncio.sleep(2)
+            await cur.close()
+            await database.close()
+            utilities.write_log(f"{member} Unbanned by {interaction.user}")
+        except sqlite3.Connection.Error:
+            print("Db closed")
+            pass
             return
 
     @commands.command(name='clear', aliases=['Clear', 'Clr'])
@@ -252,28 +253,26 @@ class moderation(commands.Cog):
 
     @app_commands.command(name='modlogs')
     @commands.has_permissions(manage_messages=True)
-    async def modlogs(self, interaction: discord.Interaction, member: discord.Member = None):
+    async def modlogs(self, interaction: discord.Interaction, userid:str):
         """Shows user logs. Format: @user """
         database = await utilities.connect_database()
+        member = await interaction.client.fetch_user(userid)
         index = 0
         embed = discord.Embed(
             title=f"logs for: ({member.id}) {member.name}#{member.discriminator}", description="___ ___", color=discord.Color.blue())
         if member is not None:
-            try:
-                async with database.execute('SELECT logid, moderationLogType, moduserid, content, duration FROM moderationLogs WHERE guildid = ? AND userid = ?', (interaction.guild.id, member.id)) as cursor:
-                    async for entry in cursor:
-                        logid, moderationLogTypes, moduserid, content, duration = entry
-                        decrypted_reason = str(crypter.dcypt(content)).replace("b", '').replace("'", '')
-                        Moderator = await self.bot.fetch_user(int(moduserid))
-                        type = log_converter(moderationLogTypes)
-                        if duration == 0:
-                            embed.add_field(
-                                name=f"**Case {logid}**", value=f"**User:**{member.name}#{member.discriminator}\n**Type:**{type}\n**Admin:**{Moderator.name}#{Moderator.discriminator}\n**Reason:**{decrypted_reason}", inline=False)
-                        else:
-                            embed.add_field(
-                                name=f"**Case {logid}**", value=f"**User:**{member.name}#{member.discriminator}\n**Type:**{type}\n**Admin:**{Moderator.name}#{Moderator.discriminator}\n**Reason:**{decrypted_reason}\n**Duration:**{duration}", inline=False)
-            except Exception as e:
-                return print(e)
+            async with database.execute('SELECT logid, moderationLogType, moduserid, content, duration FROM moderationLogs WHERE guildid = ? AND userid = ?', (interaction.guild.id, member.id)) as cursor:
+                async for entry in cursor:
+                    logid, moderationLogTypes, moduserid, content, duration = entry
+                    decrypted_reason = str(crypter.dcypt(content)).replace("b", '').replace("'", '')
+                    Moderator = interaction.client.get_user(int(moduserid))
+                    type = log_converter(moderationLogTypes)
+                    if duration == 0:
+                        embed.add_field(
+                            name=f"**Case {logid}**", value=f"**User:**{member.name}#{member.discriminator}\n**Type:**{type}\n**Admin:**{Moderator.name}#{Moderator.discriminator}\n**Reason:**{decrypted_reason}", inline=False)
+                    else:
+                        embed.add_field(
+                            name=f"**Case {logid}**", value=f"**User:**{member.name}#{member.discriminator}\n**Type:**{type}\n**Admin:**{Moderator.name}#{Moderator.discriminator}\n**Reason:**{decrypted_reason}\n**Duration:**{duration}", inline=False)
         await interaction.response.send_message(embed=embed)
         await asyncio.sleep(2)
         await database.close()

@@ -4,6 +4,8 @@ modules = [
     "Core.listeners",
     "Core.moderation",
     "Core.userinfo",
+    "Core.servermanage",
+    "mtf.faqs",
 ]
 
 
